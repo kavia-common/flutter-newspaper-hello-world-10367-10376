@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
@@ -75,6 +76,11 @@ class NewsApiClient {
       throw NewsApiException(
         'Network error while contacting NewsAPI. Showing offline preview data.',
       );
+    } on IOException {
+      // Covers a broader class of low-level network/IO errors.
+      throw NewsApiException(
+        'Network I/O error while contacting NewsAPI. Showing offline preview data.',
+      );
     } on FormatException {
       throw NewsApiException(
         'Unexpected response from NewsAPI. Showing offline preview data.',
@@ -82,6 +88,11 @@ class NewsApiClient {
     } on TimeoutException {
       throw NewsApiException(
         'NewsAPI request timed out. Showing offline preview data.',
+      );
+    } catch (_) {
+      // Safety net: never let unknown exceptions from HttpClient crash preview.
+      throw NewsApiException(
+        'Unexpected error while contacting NewsAPI. Showing offline preview data.',
       );
     }
   }
