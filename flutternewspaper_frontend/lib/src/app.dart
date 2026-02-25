@@ -39,7 +39,6 @@ class NewsApp extends StatelessWidget {
         unselectedLabelColor: _onPrimary,
         indicatorColor: _accent,
         tabAlignment: TabAlignment.start,
-        isScrollable: true,
       ),
       cardTheme: CardTheme(
         color: Colors.white,
