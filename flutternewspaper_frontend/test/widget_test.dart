@@ -1,18 +1,22 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutternewspaper_frontend/main.dart';
 
 void main() {
-  testWidgets('App generation message displayed', (WidgetTester tester) async {
+  testWidgets('Home screen renders app title', (WidgetTester tester) async {
     await tester.pumpWidget(const MyApp());
 
-    expect(find.text('flutternewspaper_frontend App is being generated...'), findsOneWidget);
-    expect(find.byType(CircularProgressIndicator), findsOneWidget);
+    expect(find.text('News App'), findsOneWidget);
   });
 
-  testWidgets('App bar has correct title', (WidgetTester tester) async {
+  testWidgets('Tab titles render', (WidgetTester tester) async {
     await tester.pumpWidget(const MyApp());
 
-    expect(find.text('flutternewspaper_frontend'), findsOneWidget);
+    expect(find.text('Home'), findsOneWidget);
+    expect(find.text('business'), findsOneWidget);
+    expect(find.text('entertainment'), findsOneWidget);
+    expect(find.text('science'), findsOneWidget);
+    expect(find.text('sports'), findsOneWidget);
+    expect(find.text('technology'), findsOneWidget);
+    expect(find.text('health'), findsOneWidget);
   });
 }
