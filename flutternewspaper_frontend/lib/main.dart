@@ -34,55 +34,29 @@ class MyApp extends StatefulWidget {
 
 class _MyAppState extends State<MyApp> {
   late final SavedNewsDb _db;
-  late final Future<void> _initFuture;
 
   @override
   void initState() {
     super.initState();
     _db = SavedNewsDb();
-    _initFuture = _db.ensureInitialized();
+
+    // Fire-and-forget initialization so the UI is never blocked (prevents blank
+    // preview/test screens in environments where sqflite isn't supported).
+    //
+    // Note: no BuildContext usage here.
+    _db.ensureInitialized();
   }
 
   @override
   Widget build(BuildContext context) {
-    return FutureBuilder<void>(
-      future: _initFuture,
-      builder: (context, snapshot) {
-        // If DB init fails for some reason, show a visible error rather than a blank screen.
-        if (snapshot.hasError) {
-          return MaterialApp(
-            debugShowCheckedModeBanner: false,
-            home: Scaffold(
-              body: Center(
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Text('Failed to initialize app: ${snapshot.error}'),
-                ),
-              ),
-            ),
-          );
-        }
-
-        // While DB initializes, show a lightweight splash/progress screen.
-        if (snapshot.connectionState != ConnectionState.done) {
-          return const MaterialApp(
-            debugShowCheckedModeBanner: false,
-            home: Scaffold(
-              body: Center(child: CircularProgressIndicator()),
-            ),
-          );
-        }
-
-        return MultiProvider(
-          providers: [
-            Provider<SavedNewsDb>.value(value: _db),
-            ChangeNotifierProvider<NewsAppState>(
-              create: (_) => NewsAppState(db: _db)..init(),
-            ),
-          ],
-          child: const NewsApp(),
-        );
-      },
+    return MultiProvider(
+      providers: [
+        Provider<SavedNewsDb>.value(value: _db),
+        ChangeNotifierProvider<NewsAppState>(
+          create: (_) => NewsAppState(db: _db)..init(),
+        ),
+      ],
+      child: const NewsApp(),
     );
   }
 }
