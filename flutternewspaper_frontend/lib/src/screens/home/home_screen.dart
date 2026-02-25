@@ -56,33 +56,48 @@ class HomeScreen extends StatelessWidget {
             ],
           ),
         ),
-        body: Builder(
-          builder: (context) {
-            if (state.errorMessage != null && !state.isLoading) {
-              return Center(
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  child: Text(
-                    state.errorMessage!,
-                    style: Theme.of(context).textTheme.titleMedium,
-                    textAlign: TextAlign.center,
+        body: Column(
+          children: [
+            if (state.errorMessage != null && !state.isLoading)
+              Material(
+                color: Theme.of(context).colorScheme.surface,
+                child: Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
+                  decoration: BoxDecoration(
+                    border: Border(
+                      bottom: BorderSide(color: Colors.grey.withAlpha(0x33)),
+                    ),
+                  ),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Icon(Icons.wifi_off, color: Colors.grey.withAlpha(0xAA)),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Text(
+                          state.errorMessage!,
+                          style: Theme.of(context).textTheme.bodyMedium,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
-              );
-            }
-
-            return const TabBarView(
-              children: [
-                GeneralTab(),
-                BusinessTab(),
-                EntertainmentTab(),
-                ScienceTab(),
-                SportsTab(),
-                TechnologyTab(),
-                HealthTab(),
-              ],
-            );
-          },
+              ),
+            const Expanded(
+              child: TabBarView(
+                children: [
+                  GeneralTab(),
+                  BusinessTab(),
+                  EntertainmentTab(),
+                  ScienceTab(),
+                  SportsTab(),
+                  TechnologyTab(),
+                  HealthTab(),
+                ],
+              ),
+            ),
+          ],
         ),
       ),
     );
