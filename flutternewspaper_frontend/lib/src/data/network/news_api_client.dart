@@ -28,11 +28,10 @@ class NewsApiClient {
     required String? category,
   }) async {
     final apiKey = dotenv.env['NEWSAPI_KEY'];
-
-    // If the key is missing, do NOT throw. Preview environments often don't ship .env.
-    // Instead, return mock content so the app remains usable and the UI can render.
     if (apiKey == null || apiKey.trim().isEmpty) {
-      return _mockArticles(country: country, category: category);
+      throw NewsApiException(
+        'Missing NEWSAPI_KEY. Create a .env file and set NEWSAPI_KEY (see .env.example).',
+      );
     }
 
     final uri = Uri.https(_host, _path, <String, String>{
@@ -65,48 +64,6 @@ class NewsApiClient {
         .map((e) => NewsArticle.fromNewsApiJson(Map<String, Object?>.from(e)))
         .where((a) => a.headLine.trim().isNotEmpty)
         .toList(growable: false);
-  }
-
-  List<NewsArticle> _mockArticles({required String country, required String? category}) {
-    final cat = (category == null || category.trim().isEmpty) ? 'general' : category.trim();
-
-    final now = DateTime.now().toUtc();
-    final ts = now.toIso8601String();
-
-    return <NewsArticle>[
-      NewsArticle(
-        headLine: 'Setup required: add NEWSAPI_KEY to .env to fetch real headlines',
-        image: null,
-        description:
-            'Preview mode is using mock data because NEWSAPI_KEY is not set. '
-            'Create a .env file (see .env.example) and add NEWSAPI_KEY=...',
-        url: null,
-        source: 'App Setup',
-        time: ts,
-        content:
-            'To enable live news: create a .env file at the Flutter project root and set NEWSAPI_KEY. '
-            'You can also set NEWSAPI_COUNTRY (optional).',
-      ),
-      NewsArticle(
-        headLine: 'Mock headline ($cat) — $country',
-        image: null,
-        description: 'This is placeholder content shown when the NewsAPI key is missing.',
-        url: null,
-        source: 'Mock Data',
-        time: ts,
-        content:
-            'Once configured, the app will fetch top headlines from NewsAPI.org for the selected category.',
-      ),
-      NewsArticle(
-        headLine: 'Mock headline 2 ($cat) — $country',
-        image: null,
-        description: 'UI preview article for layout/testing.',
-        url: null,
-        source: 'Mock Data',
-        time: ts,
-        content: 'Use this app preview without needing environment setup.',
-      ),
-    ];
   }
 
   void close() {
