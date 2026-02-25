@@ -48,18 +48,22 @@ class SavedNewsScreen extends StatelessWidget {
   }
 
   Future<void> _confirmDelete(BuildContext context, NewsArticle article) async {
+    // Capture state & messenger up-front so we don't depend on BuildContext after awaits.
+    final state = context.read<NewsAppState>();
+    final messenger = ScaffoldMessenger.of(context);
+
     final confirmed = await showDialog<bool>(
       context: context,
-      builder: (context) => AlertDialog(
+      builder: (dialogContext) => AlertDialog(
         title: const Text('Alert!'),
         content: const Text('Delete this News?'),
         actions: [
           TextButton(
-            onPressed: () => Navigator.of(context).pop(false),
+            onPressed: () => Navigator.of(dialogContext).pop(false),
             child: const Text('No'),
           ),
           TextButton(
-            onPressed: () => Navigator.of(context).pop(true),
+            onPressed: () => Navigator.of(dialogContext).pop(true),
             child: const Text('Yes'),
           ),
         ],
@@ -68,9 +72,8 @@ class SavedNewsScreen extends StatelessWidget {
 
     if (confirmed != true) return;
 
-    await context.read<NewsAppState>().deleteSavedByHeadline(article.headLine);
+    await state.deleteSavedByHeadline(article.headLine);
 
-    if (!context.mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Deleted!')));
+    messenger.showSnackBar(const SnackBar(content: Text('Deleted!')));
   }
 }

@@ -68,8 +68,6 @@ class _ReadArticleScreenState extends State<ReadArticleScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final a = widget.args.article;
-
     return Scaffold(
       appBar: AppBar(
         title: const Text('Read News'),
@@ -102,8 +100,12 @@ class _ReadArticleScreenState extends State<ReadArticleScreen> {
   }
 
   Future<void> _handleMoreAction(BuildContext context, _MoreAction action) async {
-    final a = widget.args.article;
-    final url = a.url;
+    final article = widget.args.article;
+    final url = article.url;
+
+    // Capture anything derived from BuildContext BEFORE awaiting.
+    final messenger = ScaffoldMessenger.of(context);
+    final state = context.read<NewsAppState>();
 
     switch (action) {
       case _MoreAction.share:
@@ -111,10 +113,9 @@ class _ReadArticleScreenState extends State<ReadArticleScreen> {
         await Share.share('Hey, checkout this news : $url');
         break;
       case _MoreAction.save:
-        // Only DB operations after await; no navigation needed.
-        await context.read<NewsAppState>().saveArticle(a);
+        await state.saveArticle(article);
         if (!mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('News saved!')));
+        messenger.showSnackBar(const SnackBar(content: Text('News saved!')));
         break;
       case _MoreAction.browse:
         if (url == null || url.isEmpty) return;
