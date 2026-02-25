@@ -7,8 +7,12 @@ plugins {
 
 android {
     namespace = "com.example.flutternewspaper_frontend"
-    compileSdk = flutter.compileSdkVersion
-    ndkVersion = flutter.ndkVersion
+
+    // Explicitly compile with the latest SDK (backward compatible) to resolve SDK 36 requirement.
+    compileSdk = 36
+
+    // Plugins require this NDK version; using the highest required version is backward compatible.
+    ndkVersion = "27.0.12077973"
 
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_11
