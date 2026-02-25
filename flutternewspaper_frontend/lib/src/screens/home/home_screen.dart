@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:provider/provider.dart';
 
 import '../../core/constants.dart';
@@ -30,6 +31,7 @@ class HomeScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final state = context.watch<NewsAppState>();
+    final hasApiKey = (dotenv.env['NEWSAPI_KEY']?.trim().isNotEmpty ?? false);
 
     return DefaultTabController(
       length: _tabs.length,
@@ -58,7 +60,29 @@ class HomeScreen extends StatelessWidget {
         ),
         body: Builder(
           builder: (context) {
+            // Show setup instructions in-app (non-blocking) when NEWSAPI_KEY is missing.
+            final setupBanner = hasApiKey
+                ? const SizedBox.shrink()
+                : Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
+                    decoration: BoxDecoration(
+                      color: Theme.of(context).colorScheme.secondary.withAlpha(0x14),
+                      border: Border(
+                        bottom: BorderSide(
+                          color: Theme.of(context).dividerColor.withAlpha(0x44),
+                        ),
+                      ),
+                    ),
+                    child: const Text(
+                      'Preview mode: NEWSAPI_KEY is not set. '
+                      'Add it to a .env file (see .env.example) to load live news.',
+                      textAlign: TextAlign.center,
+                    ),
+                  );
+
             if (state.errorMessage != null && !state.isLoading) {
+              // Keep existing error behavior for real network failures, etc.
               return Center(
                 child: Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -71,15 +95,22 @@ class HomeScreen extends StatelessWidget {
               );
             }
 
-            return const TabBarView(
+            return Column(
               children: [
-                GeneralTab(),
-                BusinessTab(),
-                EntertainmentTab(),
-                ScienceTab(),
-                SportsTab(),
-                TechnologyTab(),
-                HealthTab(),
+                setupBanner,
+                const Expanded(
+                  child: TabBarView(
+                    children: [
+                      GeneralTab(),
+                      BusinessTab(),
+                      EntertainmentTab(),
+                      ScienceTab(),
+                      SportsTab(),
+                      TechnologyTab(),
+                      HealthTab(),
+                    ],
+                  ),
+                ),
               ],
             );
           },

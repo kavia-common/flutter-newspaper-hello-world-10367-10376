@@ -9,8 +9,13 @@ import 'src/state/news_app_state.dart';
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Load config. If .env is missing, app still runs but API calls will fail with a clear message.
-  await dotenv.load(fileName: '.env');
+  // Load config, but do not hard-fail if the .env file is missing.
+  // This keeps Flutter preview / Appetize / CI running without manual env setup.
+  try {
+    await dotenv.load(fileName: '.env');
+  } catch (_) {
+    // Intentionally ignore. The app will fall back to mock data and show a setup message.
+  }
 
   final db = SavedNewsDb();
   await db.ensureInitialized();
