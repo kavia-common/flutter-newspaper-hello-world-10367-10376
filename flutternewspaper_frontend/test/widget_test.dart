@@ -4,14 +4,12 @@ import 'package:flutternewspaper_frontend/main.dart';
 void main() {
   testWidgets('Home screen renders app title', (WidgetTester tester) async {
     await tester.pumpWidget(const MyApp());
-    await tester.pumpAndSettle();
 
     expect(find.text('News App'), findsOneWidget);
   });
 
   testWidgets('Tab titles render', (WidgetTester tester) async {
     await tester.pumpWidget(const MyApp());
-    await tester.pumpAndSettle();
 
     expect(find.text('Home'), findsOneWidget);
     expect(find.text('business'), findsOneWidget);
