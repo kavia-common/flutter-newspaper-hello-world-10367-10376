@@ -2,10 +2,10 @@ import 'dart:async';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:provider/provider.dart';
 
 import 'src/app.dart';
+import 'src/core/env.dart';
 import 'src/data/db/saved_news_db.dart';
 import 'src/state/news_app_state.dart';
 
@@ -24,8 +24,9 @@ Future<void> main() async {
 
   // Catch any uncaught async exceptions that would otherwise crash the preview.
   await runZonedGuarded<Future<void>>(() async {
-    // Load config. If .env is missing, app still runs but API calls will fail with a clear message.
-    await dotenv.load(fileName: '.env');
+    // Load config. If .env is missing/unavailable, app still runs but API calls
+    // will fail with a clear message (and the UI falls back to mock data).
+    await Env.load();
 
     final db = SavedNewsDb();
     await db.ensureInitialized();
