@@ -31,11 +31,23 @@ class NewsAppState extends ChangeNotifier {
       ? dotenv.env['NEWSAPI_COUNTRY']!.trim()
       : 'in';
 
+  bool _isConnectivityStyleError(String message) {
+    final m = message.toLowerCase();
+    return m.contains('dns') ||
+        m.contains('socketexception') ||
+        m.contains('network unavailable') ||
+        m.contains('network i/o') ||
+        m.contains('timed out') ||
+        m.contains('connection error');
+  }
+
   // PUBLIC_INTERFACE
   /// Initializes the application state: loads saved news and fetches remote categories.
   ///
-  /// If NewsAPI is unreachable (DNS/offline), we fall back to mock data so the
-  /// preview remains usable and the UI does not crash.
+  /// Behavior:
+  /// - If we have a real connectivity problem (DNS/offline/timeout), fall back to mock data.
+  /// - If NewsAPI rejects the request (401/426/429/etc), DO NOT hide it with mock data.
+  ///   Instead, show the exact NewsAPI error in the UI banner so the user can fix the key/account.
   Future<void> init() async {
     isLoading = true;
     errorMessage = null;
@@ -56,9 +68,15 @@ class NewsAppState extends ChangeNotifier {
         _fetchCategory(AppConstants.health),
       ]);
     } on NewsApiException catch (e) {
-      // Populate with mock data so UI still renders.
       errorMessage = e.message;
-      _useMockForAllCategories();
+
+      // Only fall back to mock when it looks like offline/DNS/timeouts.
+      if (_isConnectivityStyleError(e.message)) {
+        _useMockForAllCategories();
+      } else {
+        // Keep categories empty so the user sees "No news found" + the banner with exact error.
+        _byCategory.clear();
+      }
     } catch (e) {
       errorMessage = e.toString();
       _useMockForAllCategories();
