@@ -1,0 +1,1 @@
+ /home/kavia/workspace/code-generation/flutter-newspaper-hello-world-10367-10376/flutternewspaper_frontend/.dart_tool/flutter_build/c3bb913a19ca6b52ef3eb8ab6017359e/native_assets.json: 
