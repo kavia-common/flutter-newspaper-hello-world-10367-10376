@@ -7,8 +7,12 @@ plugins {
 
 android {
     namespace = "com.example.flutternewspaper_frontend"
-    compileSdk = flutter.compileSdkVersion
-    ndkVersion = flutter.ndkVersion
+
+    // Explicitly compile with the latest SDK (backward compatible) to resolve SDK 36 requirement.
+    compileSdk = 36
+
+    // Plugins require this NDK version; using the highest required version is backward compatible.
+    ndkVersion = "27.0.12077973"
 
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_11
@@ -24,7 +28,9 @@ android {
         applicationId = "com.example.flutternewspaper_frontend"
         // You can update the following values to match your application needs.
         // For more information, see: https://flutter.dev/to/review-gradle-config.
-        minSdk = flutter.minSdkVersion
+        //
+        // flutter_tts (Android) requires minSdkVersion 24+, otherwise the Android manifest merger fails.
+        minSdk = 24
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
         versionName = flutter.versionName
