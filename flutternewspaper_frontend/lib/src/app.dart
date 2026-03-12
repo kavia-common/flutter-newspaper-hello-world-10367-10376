@@ -109,11 +109,19 @@ class _BiometricGateState extends State<_BiometricGate> with WidgetsBindingObser
   bool _isChecking = true;
   bool _isAuthed = false;
 
+  /// How long the app may remain in background before we require re-auth.
+  static const Duration _backgroundLockTimeout = Duration(seconds: 30);
+
   /// When true, the next time the app returns to the foreground we must re-auth.
   ///
-  /// This is set ONLY after the app has actually backgrounded (inactive/paused),
-  /// so we do not prompt on trivial lifecycle transitions.
+  /// IMPORTANT: this is only set after the app has actually backgrounded
+  /// (inactive/paused) for longer than [_backgroundLockTimeout], so we do not
+  /// prompt on brief transitions (e.g., quick app switcher, notifications).
   bool _shouldReauthOnResume = false;
+
+  /// Timestamp recorded when the app first transitioned to inactive/paused while
+  /// authenticated. Used to decide whether to lock on resume.
+  DateTime? _backgroundedAt;
 
   /// Human-friendly message for why auth isn't completed yet.
   String? _message;
@@ -144,21 +152,31 @@ class _BiometricGateState extends State<_BiometricGate> with WidgetsBindingObser
     // - inactive: app is transitioning away (e.g., app switcher, incoming call).
     // - paused: app is not visible to the user (background).
     //
-    // We DO NOT lock on resumed; instead, we require re-auth *on resume* only if
-    // we previously observed inactive/paused.
+    // We DO NOT lock immediately on inactive/paused. Instead, we remember the
+    // time and decide on resume whether enough time has elapsed.
     if (state == AppLifecycleState.inactive || state == AppLifecycleState.paused) {
-      // If we were authed and the user backgrounds the app, mark it as needing reauth.
-      // Keep UI unchanged unless/ until we resume and the gate decides to show lock.
-      if (_isAuthed) {
-        setState(() {
-          _shouldReauthOnResume = true;
-        });
+      // Only track backgrounding time if the user is currently authenticated.
+      // If already locked, keep background timestamp cleared.
+      if (_isAuthed && _backgroundedAt == null) {
+        _backgroundedAt = DateTime.now();
       }
       return;
     }
 
     if (state == AppLifecycleState.resumed) {
-      // Trigger re-auth only if we actually backgrounded since last auth.
+      // Decide if we should re-auth based on how long we were backgrounded.
+      final bgAt = _backgroundedAt;
+      _backgroundedAt = null;
+
+      if (_isAuthed && bgAt != null) {
+        final elapsed = DateTime.now().difference(bgAt);
+        if (elapsed > _backgroundLockTimeout) {
+          // Mark for re-auth; keep actual UI change deferred to next frame.
+          _shouldReauthOnResume = true;
+        }
+      }
+
+      // Trigger re-auth only if we were backgrounded longer than timeout.
       if (_shouldReauthOnResume) {
         setState(() {
           _shouldReauthOnResume = false;
