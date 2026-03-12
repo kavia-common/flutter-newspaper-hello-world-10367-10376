@@ -123,25 +123,29 @@ class _BiometricGateState extends State<_BiometricGate> {
   }
 
   // PUBLIC_INTERFACE
-  /// Triggers biometric/device-credential authentication.
+  /// Triggers app-launch authentication.
+  ///
+  /// Requirements:
+  /// - Prefer biometrics when available.
+  /// - Allow fallback to the device system passcode/PIN/pattern when biometrics
+  ///   are unavailable, not enrolled, or fail (recommended UX).
   ///
   /// Returns `true` if authentication was successful, `false` otherwise.
   Future<bool> authenticate() async {
     try {
+      // isDeviceSupported() is the broad capability check; it can still be true
+      // when biometrics aren't enrolled because device credentials exist.
       final isSupported = await _auth.isDeviceSupported();
-      final canCheckBiometrics = await _auth.canCheckBiometrics;
+      if (!isSupported) return false;
 
-      if (!isSupported && !canCheckBiometrics) {
-        return false;
-      }
-
-      // Get the list of available biometric types; useful for deciding messaging.
+      // Biometrics list is used only for better prompt wording; it may be empty
+      // if biometrics aren't available or enrolled.
       final biometrics = await _auth.getAvailableBiometrics();
 
-      // Use biometrics when available; allow device credentials as fallback on Android.
-      // This matches "biometric gating" intent while remaining practical.
+      // IMPORTANT: biometricOnly=false is what enables device credential fallback
+      // (Android) and "passcode" fallback (iOS via LocalAuthentication policy).
       final didAuthenticate = await _auth.authenticate(
-        localizedReason: _localizedReason(biometrics),
+        localizedReason: _localizedReasonWithFallbackHint(biometrics),
         options: const AuthenticationOptions(
           biometricOnly: false,
           stickyAuth: true,
@@ -160,10 +164,15 @@ class _BiometricGateState extends State<_BiometricGate> {
     }
   }
 
-  String _localizedReason(List<BiometricType> biometrics) {
-    if (biometrics.contains(BiometricType.face)) return 'Authenticate with Face ID to continue';
-    if (biometrics.contains(BiometricType.fingerprint)) return 'Authenticate with fingerprint to continue';
-    return 'Authenticate to continue';
+  String _localizedReasonWithFallbackHint(List<BiometricType> biometrics) {
+    if (biometrics.contains(BiometricType.face)) {
+      return 'Authenticate with Face ID (or device passcode) to continue';
+    }
+    if (biometrics.contains(BiometricType.fingerprint)) {
+      return 'Authenticate with fingerprint (or device passcode) to continue';
+    }
+    // If biometrics list is empty, the OS may still allow device credentials.
+    return 'Authenticate with device passcode to continue';
   }
 
   Future<void> _checkAndAuthenticate() async {
@@ -172,11 +181,12 @@ class _BiometricGateState extends State<_BiometricGate> {
     bool isAuthed = false;
 
     try {
+      // We intentionally DO NOT treat "canCheckBiometrics == false" as a blocker,
+      // because we still want passcode/PIN fallback via device credentials.
       final isSupported = await _auth.isDeviceSupported();
-      final canCheckBiometrics = await _auth.canCheckBiometrics;
 
-      if (!isSupported && !canCheckBiometrics) {
-        nextMessage = 'Biometric authentication is not available on this device.';
+      if (!isSupported) {
+        nextMessage = 'Authentication is not available on this device.';
       } else {
         isAuthed = await authenticate();
         if (!isAuthed) {
@@ -187,12 +197,14 @@ class _BiometricGateState extends State<_BiometricGate> {
     } on PlatformException catch (e) {
       // Provide clearer messaging for common cases.
       if (e.code == local_auth_errors.notAvailable) {
-        nextMessage = 'Biometric authentication is not available.';
+        nextMessage = 'Authentication is not available.';
       } else if (e.code == local_auth_errors.notEnrolled) {
-        nextMessage = 'No biometrics enrolled. Please enroll Face ID/Touch ID or fingerprints in device settings.';
-      } else if (e.code == local_auth_errors.lockedOut ||
-          e.code == local_auth_errors.permanentlyLockedOut) {
-        nextMessage = 'Biometrics locked. Please unlock from device settings and try again.';
+        // With passcode fallback enabled, "notEnrolled" can still allow device credentials.
+        // We prompt the user to retry (system should offer passcode if configured).
+        nextMessage = 'Biometrics not enrolled. Use device passcode to continue.';
+      } else if (e.code == local_auth_errors.lockedOut || e.code == local_auth_errors.permanentlyLockedOut) {
+        // Locked out biometrics should still allow passcode fallback on supported devices.
+        nextMessage = 'Biometrics locked. Use device passcode to continue.';
       } else {
         nextMessage = 'Unable to authenticate. Please try again.';
       }

@@ -8,5 +8,14 @@
 	-->
 	<key>NSFaceIDUsageDescription</key>
 	<string>This app uses Face ID to authenticate you before showing the news.</string>
+
+	<!--
+	  Required for system passcode fallback on iOS when using LocalAuthentication
+	  with deviceOwnerAuthentication / device credentials.
+	  local_auth reads this key to display the system prompt when biometrics
+	  are unavailable or fail.
+	-->
+	<key>NSLocalAuthenticationUsageDescription</key>
+	<string>This app uses your device passcode to authenticate you before showing the news.</string>
 </dict>
 </plist>

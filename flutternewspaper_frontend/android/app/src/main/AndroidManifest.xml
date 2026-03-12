@@ -2,6 +2,15 @@
     <!-- Required for network access in main/release builds (API calls, image loading, WebView, etc.). -->
     <uses-permission android:name="android.permission.INTERNET"/>
 
+    <!-- local_auth: declare biometric permissions (device-credential fallback does not require extra permission). -->
+    <uses-permission android:name="android.permission.USE_BIOMETRIC"/>
+    <!-- For older devices/APIs, some biometric flows still reference USE_FINGERPRINT. -->
+    <uses-permission android:name="android.permission.USE_FINGERPRINT"/>
+
+    <!-- Declare that biometric hardware is optional (app can still run without it). -->
+    <uses-feature android:name="android.hardware.fingerprint" android:required="false"/>
+    <uses-feature android:name="android.hardware.biometrics" android:required="false"/>
+
     <application
         android:label="flutternewspaper_frontend"
         android:name="${applicationName}"
