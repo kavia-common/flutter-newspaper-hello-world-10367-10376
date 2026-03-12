@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "696744075443",
+    "project_id": "frontend-pnr",
+    "storage_bucket": "frontend-pnr.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:696744075443:android:7f0ad833e1f661ab7dd0c6",
+        "android_client_info": {
+          "package_name": "com.example.sample_notifications_frontend"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBeFK69bffS3PzoLtMyPthMDTp_IVRfX7o"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
