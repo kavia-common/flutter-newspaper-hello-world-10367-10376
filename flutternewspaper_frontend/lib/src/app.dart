@@ -103,11 +103,17 @@ class _BiometricGate extends StatefulWidget {
   State<_BiometricGate> createState() => _BiometricGateState();
 }
 
-class _BiometricGateState extends State<_BiometricGate> {
+class _BiometricGateState extends State<_BiometricGate> with WidgetsBindingObserver {
   final LocalAuthentication _auth = LocalAuthentication();
 
   bool _isChecking = true;
   bool _isAuthed = false;
+
+  /// When true, the next time the app returns to the foreground we must re-auth.
+  ///
+  /// This is set ONLY after the app has actually backgrounded (inactive/paused),
+  /// so we do not prompt on trivial lifecycle transitions.
+  bool _shouldReauthOnResume = false;
 
   /// Human-friendly message for why auth isn't completed yet.
   String? _message;
@@ -115,11 +121,58 @@ class _BiometricGateState extends State<_BiometricGate> {
   @override
   void initState() {
     super.initState();
-    // Run on next microtask/frame; avoids any edge-case issues with calling
-    // platform channels too early during app bootstrap.
+
+    WidgetsBinding.instance.addObserver(this);
+
+    // Run on next frame; avoids edge-case issues with calling platform channels
+    // too early during app bootstrap.
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _checkAndAuthenticate();
     });
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    // We only "re-lock" after the app actually leaves the foreground.
+    //
+    // - inactive: app is transitioning away (e.g., app switcher, incoming call).
+    // - paused: app is not visible to the user (background).
+    //
+    // We DO NOT lock on resumed; instead, we require re-auth *on resume* only if
+    // we previously observed inactive/paused.
+    if (state == AppLifecycleState.inactive || state == AppLifecycleState.paused) {
+      // If we were authed and the user backgrounds the app, mark it as needing reauth.
+      // Keep UI unchanged unless/ until we resume and the gate decides to show lock.
+      if (_isAuthed) {
+        setState(() {
+          _shouldReauthOnResume = true;
+        });
+      }
+      return;
+    }
+
+    if (state == AppLifecycleState.resumed) {
+      // Trigger re-auth only if we actually backgrounded since last auth.
+      if (_shouldReauthOnResume) {
+        setState(() {
+          _shouldReauthOnResume = false;
+          _isAuthed = false;
+          _isChecking = true;
+          _message = null;
+        });
+
+        // Kick off re-auth on next frame to avoid lifecycle re-entrancy.
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          _checkAndAuthenticate();
+        });
+      }
+    }
   }
 
   // PUBLIC_INTERFACE
