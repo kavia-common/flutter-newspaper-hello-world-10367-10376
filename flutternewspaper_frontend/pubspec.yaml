@@ -59,6 +59,9 @@ dependencies:
   # Text-to-speech parity
   flutter_tts: ^4.0.2
 
+  # Biometric / device credential auth gate at app launch
+  local_auth: ^2.3.0
+
   cupertino_icons: ^1.0.8
 
 dev_dependencies:
