@@ -33,9 +33,24 @@ class LocalNotifications {
   /// Whether init() has been called.
   static bool _initialized = false;
 
+  /// Whether the OS currently allows notifications for this app.
+  ///
+  /// This can be false if:
+  /// - Android 13+ permission wasn't granted (POST_NOTIFICATIONS)
+  /// - User disabled notifications at OS level
+  /// - Some preview/emulator environments suppress notification UI
+  static bool _notificationsEnabled = true;
+
   /// Handler set by the app to allow notification actions to mutate saved state
   /// without using BuildContext.
   static NewsAppState? _stateHandler;
+
+  void _debugLog(String message) {
+    if (kDebugMode) {
+      // ignore: avoid_print
+      print(message);
+    }
+  }
 
   /// PUBLIC_INTERFACE
   /// Initializes local notifications and registers action handlers.
@@ -96,8 +111,55 @@ class LocalNotifications {
     final androidSpecific = _plugin.resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>();
     await androidSpecific?.createNotificationChannel(androidChannel);
 
-    // Android 13+: request POST_NOTIFICATIONS at runtime (no-op on older versions).
-    await androidSpecific?.requestNotificationsPermission();
+    // Android 13+: request POST_NOTIFICATIONS at runtime.
+    //
+    // IMPORTANT:
+    // - Declaring POST_NOTIFICATIONS in AndroidManifest.xml is necessary but not sufficient.
+    // - On Android 13+ the user must grant it at runtime, otherwise notifications won't appear.
+    // - In some preview/emulator environments, the permission dialog may not show or the system UI
+    //   may suppress notifications; we handle that gracefully.
+    try {
+      final granted = await androidSpecific?.requestNotificationsPermission();
+      if (granted == false) {
+        if (kDebugMode) {
+          // ignore: avoid_print
+          print('LocalNotifications.init: Android notifications permission NOT granted (Android 13+).');
+        }
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        // ignore: avoid_print
+        print('LocalNotifications.init: requestNotificationsPermission failed: $e');
+      }
+    }
+
+    // Record whether the OS says notifications are enabled for the app.
+    // If they are disabled, calling show() will silently do nothing.
+    try {
+      final enabled = await _plugin
+              .resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>()
+              ?.areNotificationsEnabled() ??
+          await _plugin
+              .resolvePlatformSpecificImplementation<IOSFlutterLocalNotificationsPlugin>()
+              ?.areNotificationsEnabled() ??
+          true;
+
+      _notificationsEnabled = enabled;
+
+      if (!enabled && kDebugMode) {
+        // ignore: avoid_print
+        print(
+          'LocalNotifications.init: Notifications appear disabled in this environment. '
+          'In some preview/emulator setups, system notifications may not be displayed.',
+        );
+      }
+    } catch (e) {
+      _notificationsEnabled = true;
+      if (kDebugMode) {
+        // ignore: avoid_print
+        print('LocalNotifications.init: areNotificationsEnabled check failed (ignored): $e');
+      }
+    }
 
     _initialized = true;
   }
@@ -110,6 +172,19 @@ class LocalNotifications {
   /// Note: the payload includes a serialized article JSON for Undo.
   static Future<void> showSavedArticleNotification(NewsArticle article) async {
     if (!_initialized) return;
+
+    // If notifications are disabled, no-op (but keep the in-app snackbar behavior intact).
+    if (!_notificationsEnabled) {
+      if (kDebugMode) {
+        // ignore: avoid_print
+        print(
+          'LocalNotifications.showSavedArticleNotification: skipped because notifications are disabled. '
+          'If you are running in a preview/emulator, try a full device/emulator run and ensure '
+          'notifications are enabled in OS settings.',
+        );
+      }
+      return;
+    }
 
     final payloadMap = <String, Object?>{
       _payloadArticleJsonKey: jsonEncode(_toPayloadJson(article)),
@@ -147,13 +222,20 @@ class LocalNotifications {
 
     const details = NotificationDetails(android: androidDetails, iOS: iosDetails);
 
-    await _plugin.show(
-      _savedNotificationId,
-      'Saved',
-      article.headLine,
-      details,
-      payload: payload,
-    );
+    try {
+      await _plugin.show(
+        _savedNotificationId,
+        'Saved',
+        article.headLine,
+        details,
+        payload: payload,
+      );
+    } catch (e) {
+      if (kDebugMode) {
+        // ignore: avoid_print
+        print('LocalNotifications.showSavedArticleNotification: show() failed: $e');
+      }
+    }
   }
 
   static Map<String, Object?> _toPayloadJson(NewsArticle article) {
