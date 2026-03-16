@@ -4,6 +4,7 @@ import 'package:local_auth/local_auth.dart';
 import 'package:local_auth/error_codes.dart' as local_auth_errors;
 
 import 'core/navigation_service.dart';
+import 'screens/device_token/device_token_screen.dart';
 import 'screens/home/home_screen.dart';
 import 'screens/read/read_article_screen.dart';
 import 'screens/saved/saved_news_screen.dart';
@@ -66,6 +67,7 @@ class NewsApp extends StatelessWidget {
         routes: {
           HomeScreen.routeName: (_) => const HomeScreen(),
           SavedNewsScreen.routeName: (_) => const SavedNewsScreen(),
+          DeviceTokenScreen.routeName: (_) => const DeviceTokenScreen(),
         },
         // ReadArticle uses arguments, so it is handled by onGenerateRoute
         onGenerateRoute: (settings) {

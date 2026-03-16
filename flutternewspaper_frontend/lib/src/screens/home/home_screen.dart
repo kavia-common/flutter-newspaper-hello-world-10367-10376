@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 
 import '../../core/constants.dart';
 import '../../state/news_app_state.dart';
+import '../device_token/device_token_screen.dart';
 import '../saved/saved_news_screen.dart';
 import 'tabs/business_tab.dart';
 import 'tabs/entertainment_tab.dart';
@@ -41,6 +42,22 @@ class HomeScreen extends StatelessWidget {
               tooltip: 'Saved News',
               onPressed: () => Navigator.of(context).pushNamed(SavedNewsScreen.routeName),
               icon: const Icon(Icons.bookmarks_outlined),
+            ),
+            PopupMenuButton<_HomeMenuAction>(
+              tooltip: 'More',
+              onSelected: (action) {
+                switch (action) {
+                  case _HomeMenuAction.deviceToken:
+                    Navigator.of(context).pushNamed(DeviceTokenScreen.routeName);
+                    return;
+                }
+              },
+              itemBuilder: (context) => const [
+                PopupMenuItem(
+                  value: _HomeMenuAction.deviceToken,
+                  child: Text('Device Token'),
+                ),
+              ],
             ),
           ],
           bottom: const TabBar(
@@ -103,6 +120,8 @@ class HomeScreen extends StatelessWidget {
     );
   }
 }
+
+enum _HomeMenuAction { deviceToken }
 
 class _CategoryTabSpec {
   const _CategoryTabSpec({required this.title, required this.widget});
