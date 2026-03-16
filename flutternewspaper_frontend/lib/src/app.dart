@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:local_auth/local_auth.dart';
 import 'package:local_auth/error_codes.dart' as local_auth_errors;
 
+import 'core/navigation_service.dart';
 import 'screens/home/home_screen.dart';
 import 'screens/read/read_article_screen.dart';
 import 'screens/saved/saved_news_screen.dart';
@@ -58,6 +59,7 @@ class NewsApp extends StatelessWidget {
     // the SAME MaterialApp / routes as before (no changes to post-auth flows).
     return _BiometricGate(
       child: MaterialApp(
+        navigatorKey: NavigationService.navigatorKey,
         title: 'News App',
         debugShowCheckedModeBanner: false,
         theme: _theme(),

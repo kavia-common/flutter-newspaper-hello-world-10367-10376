@@ -7,6 +7,7 @@ import 'package:webview_flutter/webview_flutter.dart';
 
 import '../../models/news_article.dart';
 import '../../state/news_app_state.dart';
+import '../../core/local_notifications.dart';
 
 class ReadArticleArgs {
   const ReadArticleArgs({required this.article});
@@ -114,6 +115,10 @@ class _ReadArticleScreenState extends State<ReadArticleScreen> {
         break;
       case _MoreAction.save:
         await state.saveArticle(article);
+
+        // Notification is context-free; safe after await per project rule.
+        await LocalNotifications.showSavedArticleNotification(article);
+
         if (!mounted) return;
         messenger.showSnackBar(const SnackBar(content: Text('News saved!')));
         break;

@@ -17,5 +17,9 @@
 	-->
 	<key>NSLocalAuthenticationUsageDescription</key>
 	<string>This app uses your device passcode to authenticate you before showing the news.</string>
+
+	<!-- Local notifications: iOS will prompt for permission; this string is shown in some system UI contexts. -->
+	<key>NSUserNotificationUsageDescription</key>
+	<string>This app sends notifications when you save an article, with quick actions to open saved news or undo.</string>
 </dict>
 </plist>

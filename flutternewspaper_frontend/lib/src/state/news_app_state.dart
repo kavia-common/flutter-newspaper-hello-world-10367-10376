@@ -160,4 +160,11 @@ class NewsAppState extends ChangeNotifier {
     saved = await _db.getAll();
     notifyListeners();
   }
+
+  // PUBLIC_INTERFACE
+  /// Undoes a prior save action (alias of delete) for clarity when called from
+  /// notification action handlers.
+  Future<void> undoSaveByHeadline(String headline) async {
+    await deleteSavedByHeadline(headline);
+  }
 }

@@ -6,6 +6,7 @@ import 'package:provider/provider.dart';
 
 import 'src/app.dart';
 import 'src/core/env.dart';
+import 'src/core/local_notifications.dart';
 import 'src/data/db/saved_news_db.dart';
 import 'src/state/news_app_state.dart';
 
@@ -31,14 +32,18 @@ Future<void> main() async {
     final db = SavedNewsDb();
     await db.ensureInitialized();
 
+    // Create state instance upfront so we can register it as the handler for
+    // notification actions (e.g., Undo) without relying on BuildContext.
+    final appState = NewsAppState(db: db)..init();
+
+    // Initialize local notifications (requests permissions where applicable).
+    await LocalNotifications.init(state: appState);
+
     runApp(
       MultiProvider(
         providers: [
           Provider<SavedNewsDb>.value(value: db),
-          ChangeNotifierProvider<NewsAppState>(
-            // init() is async; any unexpected uncaught errors will now be trapped by the zone.
-            create: (_) => NewsAppState(db: db)..init(),
-          ),
+          ChangeNotifierProvider<NewsAppState>.value(value: appState),
         ],
         child: const MyApp(),
       ),

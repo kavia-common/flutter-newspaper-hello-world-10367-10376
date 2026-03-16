@@ -2,6 +2,9 @@
     <!-- Required for network access in main/release builds (API calls, image loading, WebView, etc.). -->
     <uses-permission android:name="android.permission.INTERNET"/>
 
+    <!-- Android 13+ runtime permission required for posting notifications. -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
+
     <!-- local_auth: declare biometric permissions (device-credential fallback does not require extra permission). -->
     <uses-permission android:name="android.permission.USE_BIOMETRIC"/>
     <!-- For older devices/APIs, some biometric flows still reference USE_FINGERPRINT. -->
