@@ -45,6 +45,14 @@ class LocalNotifications {
   /// without using BuildContext.
   static NewsAppState? _stateHandler;
 
+  /// PUBLIC_INTERFACE
+  /// Latest diagnostic message from notification attempts (best-effort).
+  ///
+  /// Used to provide a visible in-app explanation in preview environments where
+  /// system notifications may be suppressed.
+  static String? get lastDiagnostic => _lastDiagnostic;
+  static String? _lastDiagnostic;
+
   void _debugLog(String message) {
     if (kDebugMode) {
       // ignore: avoid_print
@@ -101,32 +109,31 @@ class LocalNotifications {
     );
 
     // Android channel (required on Android 8+).
+    //
+    // Use HIGH importance so a "Saved" confirmation actually appears in more
+    // device configurations. Users can still downgrade it in OS settings.
     const androidChannel = AndroidNotificationChannel(
       _channelId,
       _channelName,
       description: _channelDescription,
-      importance: Importance.defaultImportance,
+      importance: Importance.high,
     );
 
     final androidSpecific = _plugin.resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>();
     await androidSpecific?.createNotificationChannel(androidChannel);
 
     // Android 13+: request POST_NOTIFICATIONS at runtime.
-    //
-    // IMPORTANT:
-    // - Declaring POST_NOTIFICATIONS in AndroidManifest.xml is necessary but not sufficient.
-    // - On Android 13+ the user must grant it at runtime, otherwise notifications won't appear.
-    // - In some preview/emulator environments, the permission dialog may not show or the system UI
-    //   may suppress notifications; we handle that gracefully.
     try {
       final granted = await androidSpecific?.requestNotificationsPermission();
       if (granted == false) {
+        _lastDiagnostic = 'Android notifications permission not granted.';
         if (kDebugMode) {
           // ignore: avoid_print
           print('LocalNotifications.init: Android notifications permission NOT granted (Android 13+).');
         }
       }
     } catch (e) {
+      _lastDiagnostic = 'Failed to request notification permission: $e';
       if (kDebugMode) {
         // ignore: avoid_print
         print('LocalNotifications.init: requestNotificationsPermission failed: $e');
@@ -134,7 +141,6 @@ class LocalNotifications {
     }
 
     // Record whether the OS says notifications are enabled for the app.
-    // If they are disabled, calling show() will silently do nothing.
     try {
       final enabled = await _plugin
               .resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>()
@@ -146,12 +152,15 @@ class LocalNotifications {
 
       _notificationsEnabled = enabled;
 
-      if (!enabled && kDebugMode) {
-        // ignore: avoid_print
-        print(
-          'LocalNotifications.init: Notifications appear disabled in this environment. '
-          'In some preview/emulator setups, system notifications may not be displayed.',
-        );
+      if (!enabled) {
+        _lastDiagnostic = 'Notifications are disabled or suppressed by the environment.';
+        if (kDebugMode) {
+          // ignore: avoid_print
+          print(
+            'LocalNotifications.init: Notifications appear disabled in this environment. '
+            'In some preview/emulator setups, system notifications may not be displayed.',
+          );
+        }
       }
     } catch (e) {
       _notificationsEnabled = true;
@@ -164,26 +173,41 @@ class LocalNotifications {
     _initialized = true;
   }
 
-  /// PUBLIC_INTERFACE
-  /// Shows a "Saved" notification with action buttons:
-  /// - Open Saved: navigates to Saved News screen
-  /// - Undo: removes the saved article (by headline)
+  /// Result of attempting to show a local notification.
   ///
-  /// Note: the payload includes a serialized article JSON for Undo.
-  static Future<void> showSavedArticleNotification(NewsArticle article) async {
-    if (!_initialized) return;
+  /// Used so UI can show a clear in-app diagnostic when notifications are
+  /// disabled/suppressed (common in preview runtimes).
+  class ShowResult {
+    const ShowResult({required this.didShow, required this.diagnostic});
 
-    // If notifications are disabled, no-op (but keep the in-app snackbar behavior intact).
+    final bool didShow;
+    final String? diagnostic;
+  }
+
+  /// PUBLIC_INTERFACE
+  /// Shows a "Saved" notification with action buttons.
+  ///
+  /// Returns a [ShowResult] so callers can show an in-app fallback message if
+  /// the OS/environment suppressed notifications.
+  static Future<ShowResult> showSavedArticleNotification(NewsArticle article) async {
+    if (!_initialized) {
+      const msg = 'LocalNotifications not initialized.';
+      _lastDiagnostic = msg;
+      return const ShowResult(didShow: false, diagnostic: msg);
+    }
+
     if (!_notificationsEnabled) {
+      final msg =
+          'System notifications are disabled/suppressed in this environment. '
+          'If you are running in an emulator/preview, try a full device run and enable '
+          'notifications in OS settings for this app.';
+      _lastDiagnostic = msg;
+
       if (kDebugMode) {
         // ignore: avoid_print
-        print(
-          'LocalNotifications.showSavedArticleNotification: skipped because notifications are disabled. '
-          'If you are running in a preview/emulator, try a full device/emulator run and ensure '
-          'notifications are enabled in OS settings.',
-        );
+        print('LocalNotifications.showSavedArticleNotification: skipped: $msg');
       }
-      return;
+      return ShowResult(didShow: false, diagnostic: msg);
     }
 
     final payloadMap = <String, Object?>{
@@ -195,8 +219,8 @@ class LocalNotifications {
       _channelId,
       _channelName,
       channelDescription: _channelDescription,
-      importance: Importance.defaultImportance,
-      priority: Priority.defaultPriority,
+      importance: Importance.high,
+      priority: Priority.high,
       actions: <AndroidNotificationAction>[
         AndroidNotificationAction(
           actionOpenSaved,
@@ -230,11 +254,16 @@ class LocalNotifications {
         details,
         payload: payload,
       );
+      _lastDiagnostic = null;
+      return const ShowResult(didShow: true, diagnostic: null);
     } catch (e) {
+      final msg = 'Notification show() failed: $e';
+      _lastDiagnostic = msg;
       if (kDebugMode) {
         // ignore: avoid_print
         print('LocalNotifications.showSavedArticleNotification: show() failed: $e');
       }
+      return ShowResult(didShow: false, diagnostic: msg);
     }
   }
 

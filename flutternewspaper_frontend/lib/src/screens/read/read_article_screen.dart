@@ -117,10 +117,19 @@ class _ReadArticleScreenState extends State<ReadArticleScreen> {
         await state.saveArticle(article);
 
         // Notification is context-free; safe after await per project rule.
-        await LocalNotifications.showSavedArticleNotification(article);
+        final result = await LocalNotifications.showSavedArticleNotification(article);
 
         if (!mounted) return;
-        messenger.showSnackBar(const SnackBar(content: Text('News saved!')));
+
+        // Always confirm save. If the OS notification didn't show (preview/emulator
+        // suppression or permission disabled), show a clear diagnostic.
+        messenger.showSnackBar(
+          SnackBar(
+            content: Text(
+              result.didShow ? 'News saved! Notification sent.' : 'News saved! ${result.diagnostic ?? 'Notification not shown.'}',
+            ),
+          ),
+        );
         break;
       case _MoreAction.browse:
         if (url == null || url.isEmpty) return;
