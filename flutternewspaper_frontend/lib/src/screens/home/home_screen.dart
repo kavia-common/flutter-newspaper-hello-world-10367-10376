@@ -36,6 +36,9 @@ class HomeScreen extends StatelessWidget {
     return DefaultTabController(
       length: _tabs.length,
       child: Scaffold(
+        // Ensures a leading hamburger icon can appear when appropriate and also
+        // provides a secondary navigation path (without relying on AppBar icons).
+        drawer: const _HomeDrawer(),
         appBar: AppBar(
           title: const Text('News App'),
           actions: [
@@ -120,6 +123,11 @@ class HomeScreen extends StatelessWidget {
                   ),
                 ),
               ),
+
+            // Always-visible entry points to tools; avoids relying on AppBar icons
+            // which may not show up in some preview environments.
+            const _HomeToolsStrip(),
+
             const Expanded(
               child: TabBarView(
                 children: [
@@ -147,4 +155,110 @@ class _CategoryTabSpec {
 
   final String title;
   final Widget widget;
+}
+
+class _HomeToolsStrip extends StatelessWidget {
+  const _HomeToolsStrip();
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+
+    return Material(
+      color: scheme.surface,
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
+        decoration: BoxDecoration(
+          border: Border(
+            bottom: BorderSide(color: Colors.grey.withAlpha(0x33)),
+          ),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Tools',
+              style: Theme.of(context).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w700),
+            ),
+            const SizedBox(height: 8),
+            SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: Row(
+                children: [
+                  FilledButton.icon(
+                    onPressed: () => Navigator.of(context).pushNamed(NotificationTestScreen.routeName),
+                    icon: const Icon(Icons.notifications_outlined),
+                    label: const Text('Notification Test'),
+                  ),
+                  const SizedBox(width: 10),
+                  OutlinedButton.icon(
+                    onPressed: () => Navigator.of(context).pushNamed(DeviceTokenScreen.routeName),
+                    icon: const Icon(Icons.phonelink_setup_outlined),
+                    label: const Text('Device Token'),
+                  ),
+                  const SizedBox(width: 10),
+                  OutlinedButton.icon(
+                    onPressed: () => Navigator.of(context).pushNamed(SavedNewsScreen.routeName),
+                    icon: const Icon(Icons.bookmarks_outlined),
+                    label: const Text('Saved News'),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _HomeDrawer extends StatelessWidget {
+  const _HomeDrawer();
+
+  @override
+  Widget build(BuildContext context) {
+    return Drawer(
+      child: SafeArea(
+        child: ListView(
+          padding: EdgeInsets.zero,
+          children: [
+            const DrawerHeader(
+              child: Align(
+                alignment: Alignment.bottomLeft,
+                child: Text(
+                  'News App',
+                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.w700),
+                ),
+              ),
+            ),
+            ListTile(
+              leading: const Icon(Icons.notifications_outlined),
+              title: const Text('Notification Test'),
+              onTap: () {
+                Navigator.of(context).pop();
+                Navigator.of(context).pushNamed(NotificationTestScreen.routeName);
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.phonelink_setup_outlined),
+              title: const Text('Device Token'),
+              onTap: () {
+                Navigator.of(context).pop();
+                Navigator.of(context).pushNamed(DeviceTokenScreen.routeName);
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.bookmarks_outlined),
+              title: const Text('Saved News'),
+              onTap: () {
+                Navigator.of(context).pop();
+                Navigator.of(context).pushNamed(SavedNewsScreen.routeName);
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 }
