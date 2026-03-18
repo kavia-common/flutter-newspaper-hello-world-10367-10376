@@ -316,7 +316,13 @@ class _BiometricGateState extends State<_BiometricGate> with WidgetsBindingObser
   Future<void> _checkAndAuthenticate() async {
     // IMPORTANT: no BuildContext usage after awaits (per project rule).
     String? nextMessage;
+
+    // Default behavior is "locked until authenticated".
+    // However, in demo/preview environments (and some emulators) local_auth may be
+    // effectively unavailable; in that case we fail open so the app is not a
+    // blank/blocked screen.
     bool isAuthed = false;
+    bool shouldFailOpen = false;
 
     try {
       // We intentionally DO NOT treat "canCheckBiometrics == false" as a blocker,
@@ -324,7 +330,9 @@ class _BiometricGateState extends State<_BiometricGate> with WidgetsBindingObser
       final isSupported = await _auth.isDeviceSupported();
 
       if (!isSupported) {
-        nextMessage = 'Authentication is not available on this device.';
+        // Fail-open: if authentication is not supported at all, show the app.
+        shouldFailOpen = true;
+        nextMessage = null;
       } else {
         isAuthed = await authenticate();
         if (!isAuthed) {
@@ -333,14 +341,16 @@ class _BiometricGateState extends State<_BiometricGate> with WidgetsBindingObser
         }
       }
     } on PlatformException catch (e) {
-      // Provide clearer messaging for common cases.
+      // Fail-open for "notAvailable" since this is the common case for previews.
       if (e.code == local_auth_errors.notAvailable) {
-        nextMessage = 'Authentication is not available.';
+        shouldFailOpen = true;
+        nextMessage = null;
       } else if (e.code == local_auth_errors.notEnrolled) {
         // With passcode fallback enabled, "notEnrolled" can still allow device credentials.
         // We prompt the user to retry (system should offer passcode if configured).
         nextMessage = 'Biometrics not enrolled. Use device passcode to continue.';
-      } else if (e.code == local_auth_errors.lockedOut || e.code == local_auth_errors.permanentlyLockedOut) {
+      } else if (e.code == local_auth_errors.lockedOut ||
+          e.code == local_auth_errors.permanentlyLockedOut) {
         // Locked out biometrics should still allow passcode fallback on supported devices.
         nextMessage = 'Biometrics locked. Use device passcode to continue.';
       } else {
@@ -356,6 +366,11 @@ class _BiometricGateState extends State<_BiometricGate> with WidgetsBindingObser
         // ignore: avoid_print
         print('BiometricGate unexpected error: $e');
       }
+    }
+
+    // Apply fail-open rule.
+    if (shouldFailOpen) {
+      isAuthed = true;
     }
 
     // Only update primitive state after await.
