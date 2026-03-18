@@ -2,13 +2,17 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:local_auth/local_auth.dart';
 import 'package:local_auth/error_codes.dart' as local_auth_errors;
+import 'package:provider/provider.dart';
 
+import 'core/firebase_messaging_service.dart';
+import 'core/local_notifications.dart';
 import 'core/navigation_service.dart';
 import 'screens/device_token/device_token_screen.dart';
 import 'screens/home/home_screen.dart';
 import 'screens/notification_test/notification_test_screen.dart';
 import 'screens/read/read_article_screen.dart';
 import 'screens/saved/saved_news_screen.dart';
+import 'state/news_app_state.dart';
 
 class NewsApp extends StatelessWidget {
   const NewsApp({super.key});
@@ -60,37 +64,92 @@ class NewsApp extends StatelessWidget {
     // Gate the entire app UI behind biometric auth. Once authenticated, we render
     // the SAME MaterialApp / routes as before (no changes to post-auth flows).
     return _BiometricGate(
-      child: MaterialApp(
-        navigatorKey: NavigationService.navigatorKey,
-        title: 'News App',
-        debugShowCheckedModeBanner: false,
-        theme: _theme(),
-        routes: {
-          HomeScreen.routeName: (_) => const HomeScreen(),
-          SavedNewsScreen.routeName: (_) => const SavedNewsScreen(),
-          DeviceTokenScreen.routeName: (_) => const DeviceTokenScreen(),
-          NotificationTestScreen.routeName: (_) => const NotificationTestScreen(),
-        },
-        // ReadArticle uses arguments, so it is handled by onGenerateRoute
-        onGenerateRoute: (settings) {
-          if (settings.name == ReadArticleScreen.routeName) {
-            final args = settings.arguments;
-            if (args is ReadArticleArgs) {
+      child: _NotificationBootstrapper(
+        child: MaterialApp(
+          navigatorKey: NavigationService.navigatorKey,
+          title: 'News App',
+          debugShowCheckedModeBanner: false,
+          theme: _theme(),
+          routes: {
+            HomeScreen.routeName: (_) => const HomeScreen(),
+            SavedNewsScreen.routeName: (_) => const SavedNewsScreen(),
+            DeviceTokenScreen.routeName: (_) => const DeviceTokenScreen(),
+            NotificationTestScreen.routeName: (_) => const NotificationTestScreen(),
+          },
+          // ReadArticle uses arguments, so it is handled by onGenerateRoute
+          onGenerateRoute: (settings) {
+            if (settings.name == ReadArticleScreen.routeName) {
+              final args = settings.arguments;
+              if (args is ReadArticleArgs) {
+                return MaterialPageRoute<void>(
+                  builder: (_) => ReadArticleScreen(args: args),
+                  settings: settings,
+                );
+              }
               return MaterialPageRoute<void>(
-                builder: (_) => ReadArticleScreen(args: args),
+                builder: (_) => const _BadRouteScreen(message: 'Missing ReadArticleArgs'),
                 settings: settings,
               );
             }
-            return MaterialPageRoute<void>(
-              builder: (_) => const _BadRouteScreen(message: 'Missing ReadArticleArgs'),
-              settings: settings,
-            );
-          }
-          return null;
-        },
-        initialRoute: HomeScreen.routeName,
+            return null;
+          },
+          initialRoute: HomeScreen.routeName,
+        ),
       ),
     );
+  }
+}
+
+/// Initializes local + push notification plumbing at the app root.
+///
+/// This keeps the existing “Notification Test” and “Device Token” screens as UI
+/// surfaces, but ensures their underlying services are wired from `app.dart`
+/// (not implicitly “owned” by HomeScreen tool UI).
+class _NotificationBootstrapper extends StatefulWidget {
+  const _NotificationBootstrapper({required this.child});
+
+  final Widget child;
+
+  @override
+  State<_NotificationBootstrapper> createState() => _NotificationBootstrapperState();
+}
+
+class _NotificationBootstrapperState extends State<_NotificationBootstrapper> {
+  bool _didInit = false;
+
+  @override
+  void initState() {
+    super.initState();
+
+    // Defer work until after first frame; avoids early platform-channel edge cases.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _init();
+    });
+  }
+
+  Future<void> _init() async {
+    if (_didInit) return;
+
+    // IMPORTANT: no BuildContext usage after awaits (project rule). We grab
+    // dependencies synchronously before doing async work.
+    final state = context.read<NewsAppState>();
+
+    // Local notifications: init is idempotent and keeps latest state handler.
+    await LocalNotifications.init(state: state);
+
+    // Push notifications: ensure firebase init and request permission once.
+    await FirebaseMessagingService.ensureInitialized();
+    await FirebaseMessagingService.requestPermission();
+
+    // Only update primitive state after await.
+    setState(() {
+      _didInit = true;
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return widget.child;
   }
 }
 

@@ -71,6 +71,10 @@ class FirebaseMessagingService {
   static Future<String?> getDeviceToken() async {
     await ensureInitialized();
 
+    // Best-effort: ensure permission prompt has been handled before token fetch.
+    // This keeps token UI “read-only” and moves wiring to service/app bootstrap.
+    await requestPermission();
+
     try {
       final token = await FirebaseMessaging.instance.getToken();
       return token;
