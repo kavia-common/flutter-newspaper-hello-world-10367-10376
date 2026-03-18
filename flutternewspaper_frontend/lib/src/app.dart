@@ -12,6 +12,7 @@ import 'screens/home/home_screen.dart';
 import 'screens/notification_test/notification_test_screen.dart';
 import 'screens/read/read_article_screen.dart';
 import 'screens/saved/saved_news_screen.dart';
+import 'screens/settings/settings_screen.dart';
 import 'state/news_app_state.dart';
 
 class NewsApp extends StatelessWidget {
@@ -75,6 +76,7 @@ class NewsApp extends StatelessWidget {
             SavedNewsScreen.routeName: (_) => const SavedNewsScreen(),
             DeviceTokenScreen.routeName: (_) => const DeviceTokenScreen(),
             NotificationTestScreen.routeName: (_) => const NotificationTestScreen(),
+            SettingsScreen.routeName: (_) => const SettingsScreen(),
           },
           // ReadArticle uses arguments, so it is handled by onGenerateRoute
           onGenerateRoute: (settings) {

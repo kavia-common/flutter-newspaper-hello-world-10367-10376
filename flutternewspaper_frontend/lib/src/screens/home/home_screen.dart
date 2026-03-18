@@ -6,6 +6,7 @@ import '../../state/news_app_state.dart';
 import '../device_token/device_token_screen.dart';
 import '../notification_test/notification_test_screen.dart';
 import '../saved/saved_news_screen.dart';
+import '../settings/settings_screen.dart';
 import 'tabs/business_tab.dart';
 import 'tabs/entertainment_tab.dart';
 import 'tabs/general_tab.dart';
@@ -48,38 +49,9 @@ class HomeScreen extends StatelessWidget {
               icon: const Icon(Icons.bookmarks_outlined),
             ),
             IconButton(
-              tooltip: 'Notification Test',
-              onPressed: () => Navigator.of(context).pushNamed(NotificationTestScreen.routeName),
-              icon: const Icon(Icons.notifications_outlined),
-            ),
-            IconButton(
-              tooltip: 'Device Token',
-              onPressed: () => Navigator.of(context).pushNamed(DeviceTokenScreen.routeName),
-              icon: const Icon(Icons.phonelink_setup_outlined),
-            ),
-            // Keep overflow menu as a fallback (and to avoid breaking existing UI flows).
-            PopupMenuButton<_HomeMenuAction>(
-              tooltip: 'More',
-              onSelected: (action) {
-                switch (action) {
-                  case _HomeMenuAction.deviceToken:
-                    Navigator.of(context).pushNamed(DeviceTokenScreen.routeName);
-                    return;
-                  case _HomeMenuAction.notificationTest:
-                    Navigator.of(context).pushNamed(NotificationTestScreen.routeName);
-                    return;
-                }
-              },
-              itemBuilder: (context) => const [
-                PopupMenuItem(
-                  value: _HomeMenuAction.deviceToken,
-                  child: Text('Device Token'),
-                ),
-                PopupMenuItem(
-                  value: _HomeMenuAction.notificationTest,
-                  child: Text('Notification Test'),
-                ),
-              ],
+              tooltip: 'Settings',
+              onPressed: () => Navigator.of(context).pushNamed(SettingsScreen.routeName),
+              icon: const Icon(Icons.settings_outlined),
             ),
           ],
           bottom: const TabBar(
@@ -143,8 +115,6 @@ class HomeScreen extends StatelessWidget {
   }
 }
 
-enum _HomeMenuAction { deviceToken, notificationTest }
-
 class _CategoryTabSpec {
   const _CategoryTabSpec({required this.title, required this.widget});
 
@@ -172,19 +142,11 @@ class _HomeDrawer extends StatelessWidget {
               ),
             ),
             ListTile(
-              leading: const Icon(Icons.notifications_outlined),
-              title: const Text('Notification Test'),
+              leading: const Icon(Icons.settings_outlined),
+              title: const Text('Settings'),
               onTap: () {
                 Navigator.of(context).pop();
-                Navigator.of(context).pushNamed(NotificationTestScreen.routeName);
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.phonelink_setup_outlined),
-              title: const Text('Device Token'),
-              onTap: () {
-                Navigator.of(context).pop();
-                Navigator.of(context).pushNamed(DeviceTokenScreen.routeName);
+                Navigator.of(context).pushNamed(SettingsScreen.routeName);
               },
             ),
             ListTile(
