@@ -94,8 +94,6 @@ flutter:
   uses-material-design: true
 
   assets:
-    # Keep `.env` as an asset so preview/sandbox runtimes can reliably load it.
-    - .env
     - assets/
 
   # An image asset can refer to one or more resolution-specific "variants", see

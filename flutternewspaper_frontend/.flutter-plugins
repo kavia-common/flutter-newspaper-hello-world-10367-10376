@@ -1,5 +1,16 @@
 # This is a generated file; do not edit or check into version control.
+firebase_core=/home/kavia/.pub-cache/hosted/pub.dev/firebase_core-3.15.2/
+firebase_core_web=/home/kavia/.pub-cache/hosted/pub.dev/firebase_core_web-2.24.1/
+firebase_messaging=/home/kavia/.pub-cache/hosted/pub.dev/firebase_messaging-15.2.10/
+firebase_messaging_web=/home/kavia/.pub-cache/hosted/pub.dev/firebase_messaging_web-3.10.10/
+flutter_local_notifications=/home/kavia/.pub-cache/hosted/pub.dev/flutter_local_notifications-17.2.4/
+flutter_local_notifications_linux=/home/kavia/.pub-cache/hosted/pub.dev/flutter_local_notifications_linux-4.0.1/
+flutter_plugin_android_lifecycle=/home/kavia/.pub-cache/hosted/pub.dev/flutter_plugin_android_lifecycle-2.0.31/
 flutter_tts=/home/kavia/.pub-cache/hosted/pub.dev/flutter_tts-4.2.5/
+local_auth=/home/kavia/.pub-cache/hosted/pub.dev/local_auth-2.3.0/
+local_auth_android=/home/kavia/.pub-cache/hosted/pub.dev/local_auth_android-1.0.52/
+local_auth_darwin=/home/kavia/.pub-cache/hosted/pub.dev/local_auth_darwin-1.6.0/
+local_auth_windows=/home/kavia/.pub-cache/hosted/pub.dev/local_auth_windows-1.0.11/
 path_provider=/home/kavia/.pub-cache/hosted/pub.dev/path_provider-2.1.5/
 path_provider_android=/home/kavia/.pub-cache/hosted/pub.dev/path_provider_android-2.2.19/
 path_provider_foundation=/home/kavia/.pub-cache/hosted/pub.dev/path_provider_foundation-2.4.2/
