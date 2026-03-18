@@ -44,6 +44,17 @@ class HomeScreen extends StatelessWidget {
               onPressed: () => Navigator.of(context).pushNamed(SavedNewsScreen.routeName),
               icon: const Icon(Icons.bookmarks_outlined),
             ),
+            IconButton(
+              tooltip: 'Notification Test',
+              onPressed: () => Navigator.of(context).pushNamed(NotificationTestScreen.routeName),
+              icon: const Icon(Icons.notifications_outlined),
+            ),
+            IconButton(
+              tooltip: 'Device Token',
+              onPressed: () => Navigator.of(context).pushNamed(DeviceTokenScreen.routeName),
+              icon: const Icon(Icons.phonelink_setup_outlined),
+            ),
+            // Keep overflow menu as a fallback (and to avoid breaking existing UI flows).
             PopupMenuButton<_HomeMenuAction>(
               tooltip: 'More',
               onSelected: (action) {
