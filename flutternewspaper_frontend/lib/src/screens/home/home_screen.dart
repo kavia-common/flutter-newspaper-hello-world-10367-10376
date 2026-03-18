@@ -40,7 +40,7 @@ class HomeScreen extends StatelessWidget {
         // provides a secondary navigation path (without relying on AppBar icons).
         drawer: const _HomeDrawer(),
         appBar: AppBar(
-          title: const Text('News App'),
+          title: const Text('Pavana'),
           actions: [
             IconButton(
               tooltip: 'Saved News',
