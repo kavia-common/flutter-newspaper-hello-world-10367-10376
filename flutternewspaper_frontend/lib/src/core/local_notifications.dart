@@ -27,6 +27,7 @@ class LocalNotifications {
   static const String actionUndoSave = 'undo_save';
 
   static const int _savedNotificationId = 1001;
+  static const int _testNotificationId = 2001;
 
   static const String _payloadArticleJsonKey = 'article_json';
 
@@ -40,6 +41,15 @@ class LocalNotifications {
   /// - User disabled notifications at OS level
   /// - Some preview/emulator environments suppress notification UI
   static bool _notificationsEnabled = true;
+
+  /// Best-effort view of runtime permission state.
+  ///
+  /// On Android 13+ this corresponds to POST_NOTIFICATIONS runtime permission.
+  /// On iOS this corresponds to the user’s notification permission prompt.
+  ///
+  /// Note: Some plugin/platform combinations only support "enabled" checks; in
+  /// those cases this may stay null.
+  static bool? _permissionGranted;
 
   /// Handler set by the app to allow notification actions to mutate saved state
   /// without using BuildContext.
@@ -125,6 +135,7 @@ class LocalNotifications {
     // Android 13+: request POST_NOTIFICATIONS at runtime.
     try {
       final granted = await androidSpecific?.requestNotificationsPermission();
+      _permissionGranted = granted;
       if (granted == false) {
         _lastDiagnostic = 'Android notifications permission not granted.';
         if (kDebugMode) {
@@ -133,6 +144,7 @@ class LocalNotifications {
         }
       }
     } catch (e) {
+      _permissionGranted = null;
       _lastDiagnostic = 'Failed to request notification permission: $e';
       if (kDebugMode) {
         // ignore: avoid_print
@@ -170,6 +182,25 @@ class LocalNotifications {
       }
     }
 
+    // Best-effort: on iOS, requestPermissions returns whether the user granted
+    // the permission dialog.
+    try {
+      final iosSpecific = _plugin.resolvePlatformSpecificImplementation<IOSFlutterLocalNotificationsPlugin>();
+      final iosGranted = await iosSpecific?.requestPermissions(
+        alert: true,
+        badge: true,
+        sound: true,
+      );
+      if (iosGranted != null) {
+        _permissionGranted = iosGranted;
+      }
+    } catch (e) {
+      // ignore: avoid_print
+      if (kDebugMode) {
+        print('LocalNotifications.init: iOS requestPermissions failed (ignored): $e');
+      }
+    }
+
     _initialized = true;
   }
 
@@ -182,6 +213,110 @@ class LocalNotifications {
 
     final bool didShow;
     final String? diagnostic;
+  }
+
+  /// Snapshot of notification diagnostics for the current device/environment.
+  class DiagnosticsStatus {
+    const DiagnosticsStatus({
+      required this.notificationsEnabled,
+      required this.permissionGranted,
+      required this.platform,
+      required this.details,
+    });
+
+    final bool notificationsEnabled;
+    final bool? permissionGranted;
+    final String platform;
+    final String details;
+  }
+
+  /// PUBLIC_INTERFACE
+  /// Returns diagnostic information about notification permission/state.
+  ///
+  /// This API is intended for an in-app "Notification Test" screen so users can
+  /// verify whether notifications are enabled and whether runtime permission was
+  /// granted (Android 13+, iOS).
+  static Future<DiagnosticsStatus> getDiagnostics() async {
+    final platform = defaultTargetPlatform.name;
+
+    bool enabled = _notificationsEnabled;
+    bool? permissionGranted = _permissionGranted;
+
+    // Try to refresh "enabled" from platform API (best-effort).
+    try {
+      enabled = await _plugin
+              .resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>()
+              ?.areNotificationsEnabled() ??
+          await _plugin
+              .resolvePlatformSpecificImplementation<IOSFlutterLocalNotificationsPlugin>()
+              ?.areNotificationsEnabled() ??
+          enabled;
+    } catch (_) {
+      // Ignore; keep cached value.
+    }
+
+    final details = StringBuffer()
+      ..writeln('Initialized: $_initialized')
+      ..writeln('Last diagnostic: ${_lastDiagnostic ?? "None"}');
+
+    return DiagnosticsStatus(
+      notificationsEnabled: enabled,
+      permissionGranted: permissionGranted,
+      platform: platform,
+      details: details.toString().trim(),
+    );
+  }
+
+  /// PUBLIC_INTERFACE
+  /// Shows a simple test local notification.
+  ///
+  /// This uses the same notification channel as Saved notifications to ensure
+  /// channel configuration exists on Android.
+  static Future<ShowResult> showTestNotification() async {
+    if (!_initialized) {
+      const msg = 'LocalNotifications not initialized.';
+      _lastDiagnostic = msg;
+      return const ShowResult(didShow: false, diagnostic: msg);
+    }
+
+    if (!_notificationsEnabled) {
+      final msg =
+          'System notifications are disabled/suppressed in this environment. '
+          'Enable notifications in OS settings, or run on a real device.';
+      _lastDiagnostic = msg;
+      return ShowResult(didShow: false, diagnostic: msg);
+    }
+
+    const androidDetails = AndroidNotificationDetails(
+      _channelId,
+      _channelName,
+      channelDescription: _channelDescription,
+      importance: Importance.high,
+      priority: Priority.high,
+    );
+
+    const iosDetails = DarwinNotificationDetails(
+      presentAlert: true,
+      presentSound: true,
+      presentBadge: false,
+    );
+
+    const details = NotificationDetails(android: androidDetails, iOS: iosDetails);
+
+    try {
+      await _plugin.show(
+        _testNotificationId,
+        'Test notification',
+        'If you can read this, local notifications are working.',
+        details,
+      );
+      _lastDiagnostic = null;
+      return const ShowResult(didShow: true, diagnostic: null);
+    } catch (e) {
+      final msg = 'Test notification show() failed: $e';
+      _lastDiagnostic = msg;
+      return ShowResult(didShow: false, diagnostic: msg);
+    }
   }
 
   /// PUBLIC_INTERFACE

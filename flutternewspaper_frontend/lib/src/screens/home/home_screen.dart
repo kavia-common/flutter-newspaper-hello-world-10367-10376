@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../../core/constants.dart';
 import '../../state/news_app_state.dart';
 import '../device_token/device_token_screen.dart';
+import '../notification_test/notification_test_screen.dart';
 import '../saved/saved_news_screen.dart';
 import 'tabs/business_tab.dart';
 import 'tabs/entertainment_tab.dart';
@@ -50,12 +51,19 @@ class HomeScreen extends StatelessWidget {
                   case _HomeMenuAction.deviceToken:
                     Navigator.of(context).pushNamed(DeviceTokenScreen.routeName);
                     return;
+                  case _HomeMenuAction.notificationTest:
+                    Navigator.of(context).pushNamed(NotificationTestScreen.routeName);
+                    return;
                 }
               },
               itemBuilder: (context) => const [
                 PopupMenuItem(
                   value: _HomeMenuAction.deviceToken,
                   child: Text('Device Token'),
+                ),
+                PopupMenuItem(
+                  value: _HomeMenuAction.notificationTest,
+                  child: Text('Notification Test'),
                 ),
               ],
             ),
@@ -121,7 +129,7 @@ class HomeScreen extends StatelessWidget {
   }
 }
 
-enum _HomeMenuAction { deviceToken }
+enum _HomeMenuAction { deviceToken, notificationTest }
 
 class _CategoryTabSpec {
   const _CategoryTabSpec({required this.title, required this.widget});
