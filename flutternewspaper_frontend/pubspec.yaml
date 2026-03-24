@@ -62,6 +62,10 @@ dependencies:
   # Biometric / device credential auth gate at app launch
   local_auth: ^2.3.0
 
+  # Secure persistence for auth session metadata and (optional) PIN fallback
+  flutter_secure_storage: ^9.2.2
+  crypto: ^3.0.3
+
   # Local notifications (saved article + action buttons)
   flutter_local_notifications: ^17.2.2
 
