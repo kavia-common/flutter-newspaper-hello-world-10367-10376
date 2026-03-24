@@ -26,6 +26,23 @@ android {
         jvmTarget = JavaVersion.VERSION_11.toString()
     }
 
+    /**
+     * Ensure we always generate a *single* universal (fat) APK for release builds.
+     *
+     * Some setups (or CI defaults) can enable ABI splits which produce multiple APKs
+     * (e.g. app-armeabi-v7a-release.apk, app-arm64-v8a-release.apk). Those are not
+     * installable as a single artifact for end users.
+     *
+     * With splits disabled, Gradle/Flutter emits one APK containing arm64 + armeabi-v7a
+     * native libraries, which installs on typical Android 13 devices.
+     */
+    splits {
+        abi {
+            isEnable = false
+            reset()
+        }
+    }
+
     defaultConfig {
         // TODO: Specify your own unique Application ID (https://developer.android.com/studio/build/application-id.html).
         applicationId = "com.example.flutternewspaper_frontend"

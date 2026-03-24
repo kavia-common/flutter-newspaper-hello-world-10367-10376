@@ -1,16 +1,27 @@
 # flutternewspaper_frontend
 
-A new Flutter project.
+A Flutter newspaper demo application.
 
-## Getting Started
+## Universal (fat) release APK (single installable file)
 
-This project is a starting point for a Flutter application.
+This project is configured to **avoid ABI splits** so that building a release APK produces **one universal APK**
+that includes both **arm64-v8a** and **armeabi-v7a** native libraries (compatible with typical Android 13 phones).
 
-A few resources to get you started if this is your first Flutter project:
+### Build command
 
-- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
+From this directory (`flutternewspaper_frontend/`):
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+```bash
+flutter build apk --release
+```
+
+### APK to install (artifact path)
+
+Install this generated APK on your device:
+
+```
+build/app/outputs/flutter-apk/app-release.apk
+```
+
+If you see multiple APKs like `app-arm64-v8a-release.apk`, ABI splits are enabled somewhere; this repo disables them
+in `android/app/build.gradle.kts` to ensure a single universal artifact.
